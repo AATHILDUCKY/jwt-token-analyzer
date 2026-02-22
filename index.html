@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Realtime JWT Encoder / Decoder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-slate-100 font-sans">
+    <div class="max-w-7xl mx-auto px-6 py-10">
+      <header class="flex flex-col gap-3">
+        <div class="inline-flex items-center gap-3">
+          <div class="h-10 w-10 rounded-2xl bg-cyan-400/20 border border-cyan-300/40 flex items-center justify-center text-cyan-200 font-bold">
+            JWT
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight">Realtime JWT Encoder / Decoder</h1>
+            <p class="text-slate-300">Paste a token to decode instantly or build a new one with live signing.</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-xs text-slate-400">
+          <span class="px-2 py-1 rounded-full border border-slate-700">Client-side only</span>
+          <span class="px-2 py-1 rounded-full border border-slate-700">HS256 / HS384 / HS512</span>
+          <span class="px-2 py-1 rounded-full border border-slate-700">No data leaves your browser</span>
+        </div>
+      </header>
+
+      <main class="mt-8 grid gap-6 lg:grid-cols-2">
+        <section class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Decoder</h2>
+            <div class="text-xs text-slate-400" id="nowTime">--</div>
+          </div>
+
+          <label class="mt-5 block text-sm text-slate-300" for="tokenInput">JWT Token</label>
+          <textarea
+            id="tokenInput"
+            class="mt-2 w-full h-28 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          ></textarea>
+
+          <div class="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
+            <span id="structureBadge" class="px-3 py-1 rounded-full bg-slate-800 text-slate-300">Structure: --</span>
+            <span id="signatureBadge" class="px-3 py-1 rounded-full bg-slate-800 text-slate-300">Signature: --</span>
+            <span id="expiryBadge" class="px-3 py-1 rounded-full bg-slate-800 text-slate-300">Expiry: --</span>
+          </div>
+
+          <div class="mt-6 grid gap-4">
+            <div>
+              <div class="flex items-center justify-between text-sm text-slate-300">
+                <span>Header (editable)</span>
+                <button id="copyHeader" class="text-xs text-cyan-300 hover:text-cyan-200">Copy</button>
+              </div>
+              <textarea
+                id="headerOutput"
+                class="mt-2 w-full h-32 overflow-auto rounded-2xl bg-slate-950/70 border border-slate-800 p-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                spellcheck="false"
+              ></textarea>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm text-slate-300">
+                <span>Payload (editable)</span>
+                <button id="copyPayload" class="text-xs text-cyan-300 hover:text-cyan-200">Copy</button>
+              </div>
+              <textarea
+                id="payloadOutput"
+                class="mt-2 w-full h-40 overflow-auto rounded-2xl bg-slate-950/70 border border-slate-800 p-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                spellcheck="false"
+              ></textarea>
+            </div>
+            <div id="editStatus" class="text-xs text-slate-400"></div>
+          </div>
+
+          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+            <div class="text-sm font-semibold text-slate-200">Standard Claims</div>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <div class="text-slate-400">Issuer (iss)</div>
+                <div id="claimIss" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Subject (sub)</div>
+                <div id="claimSub" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Audience (aud)</div>
+                <div id="claimAud" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">JWT ID (jti)</div>
+                <div id="claimJti" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Issued At (iat)</div>
+                <div id="claimIat" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Not Before (nbf)</div>
+                <div id="claimNbf" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Expires (exp)</div>
+                <div id="claimExp" class="text-slate-200">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+            <div class="text-sm font-semibold text-slate-200">Token Metadata</div>
+            <div class="mt-3 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <div class="text-slate-400">Algorithm</div>
+                <div id="metaAlg" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Type</div>
+                <div id="metaTyp" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Key ID</div>
+                <div id="metaKid" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Length</div>
+                <div id="metaLen" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Header Bytes</div>
+                <div id="metaHeaderBytes" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Payload Bytes</div>
+                <div id="metaPayloadBytes" class="text-slate-200">--</div>
+              </div>
+              <div>
+                <div class="text-slate-400">Signature Bytes</div>
+                <div id="metaSigBytes" class="text-slate-200">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold text-slate-200">Security Insights</div>
+              <div id="strengthBadge" class="px-3 py-1 rounded-full bg-slate-800 text-slate-300 text-xs font-semibold">
+                Strength: --
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-slate-400" id="strengthScore">Score: --</div>
+            <div class="mt-3 space-y-2 text-xs" id="insightsList"></div>
+          </div>
+
+          <div class="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold text-slate-200">Reporting Possibilities</div>
+              <button id="copyReport" class="text-xs text-cyan-300 hover:text-cyan-200">Copy Report</button>
+            </div>
+            <textarea
+              id="reportOutput"
+              class="mt-3 w-full h-56 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              readonly
+            ></textarea>
+          </div>
+
+          <div class="mt-6">
+            <label class="block text-sm text-slate-300" for="verifySecret">HMAC Secret (verify / re-sign HS*)</label>
+            <input
+              id="verifySecret"
+              class="mt-2 w-full rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              placeholder="Optional: verify or re-sign HS* tokens"
+              type="password"
+            />
+            <label class="mt-4 block text-sm text-slate-300" for="verifyKey">Public Key (verify RS/ES/PS)</label>
+            <textarea
+              id="verifyKey"
+              class="mt-2 w-full h-28 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              placeholder="-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----"
+              spellcheck="false"
+            ></textarea>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg shadow-slate-950/30">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Encoder</h2>
+            <button id="copyToken" class="text-xs text-cyan-300 hover:text-cyan-200">Copy Token</button>
+          </div>
+
+          <div class="mt-5 grid gap-4">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label class="block text-sm text-slate-300" for="algSelect">Algorithm</label>
+                <select
+                  id="algSelect"
+                  class="mt-2 w-full rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                >
+                  <option value="HS256">HS256 (HMAC SHA-256)</option>
+                  <option value="HS384">HS384 (HMAC SHA-384)</option>
+                  <option value="HS512">HS512 (HMAC SHA-512)</option>
+                  <option value="RS256">RS256 (RSA SHA-256)</option>
+                  <option value="RS384">RS384 (RSA SHA-384)</option>
+                  <option value="RS512">RS512 (RSA SHA-512)</option>
+                  <option value="PS256">PS256 (RSA-PSS SHA-256)</option>
+                  <option value="PS384">PS384 (RSA-PSS SHA-384)</option>
+                  <option value="PS512">PS512 (RSA-PSS SHA-512)</option>
+                  <option value="ES256">ES256 (ECDSA P-256)</option>
+                  <option value="ES384">ES384 (ECDSA P-384)</option>
+                  <option value="ES512">ES512 (ECDSA P-521)</option>
+                  <option value="none">none (unsigned)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm text-slate-300" for="signSecret">HMAC Secret</label>
+                <input
+                  id="signSecret"
+                  class="mt-2 w-full rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                  placeholder="Required for HS*"
+                  type="password"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-slate-300" for="signKey">Signing Key (private key for RS/ES/PS)</label>
+              <textarea
+                id="signKey"
+                class="mt-2 w-full h-28 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                placeholder="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+                spellcheck="false"
+              ></textarea>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-sm text-slate-300">
+                <label for="headerInput">Header JSON</label>
+                <button id="formatHeader" class="text-xs text-cyan-300 hover:text-cyan-200">Format</button>
+              </div>
+              <textarea
+                id="headerInput"
+                class="mt-2 w-full h-28 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              ></textarea>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between text-sm text-slate-300">
+                <label for="payloadInput">Payload JSON</label>
+                <button id="formatPayload" class="text-xs text-cyan-300 hover:text-cyan-200">Format</button>
+              </div>
+              <textarea
+                id="payloadInput"
+                class="mt-2 w-full h-40 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+              ></textarea>
+            </div>
+
+            <div>
+              <div class="text-sm text-slate-300">Generated Token</div>
+              <textarea
+                id="tokenOutput"
+                class="mt-2 w-full h-28 rounded-2xl bg-slate-950/60 border border-slate-800 p-3 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/60"
+                readonly
+              ></textarea>
+            </div>
+
+            <div class="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-xs text-cyan-100">
+              Tip: Set <code class="text-cyan-200">exp</code> to a future Unix time (seconds) or leave it out.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsrsasign@10.8.6/lib/jsrsasign-all-min.js"></script>
+    <script src="jwt-script.js"></script>
+  </body>
+</html>
